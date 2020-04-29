@@ -132,5 +132,10 @@ else
     end
     
     % Paper size and PaperPosition control must be controlled yet
+    set(gcf, 'PaperSize', [20*plotsPerRow 20*numRows]);
+    % set(gcf, 'PaperPositionMode','auto');
+    set(gcf, 'PaperPosition', [0 0 20*plotsPerRow 20*numRows]);
+    set(gcf,'Position',[0 0 20*plotsPerRow 20*numRows]);
+
     print(name, ['-d' extension]);
 end
