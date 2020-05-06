@@ -50,7 +50,7 @@ end
 
 % Type of spectra_i
 
-if iscell(spectra_i)
+if isa(spectra_i,'cell')
     % Size check if it is a cell
     Ls = size(spectra_i);
     
@@ -68,7 +68,7 @@ if iscell(spectra_i)
     spectra_i = reshape(spectra_i, max(Lw), max(Lt));
     Ls = size(spectra_i);
     
-elseif isdouble(spectra_i)
+elseif isa(spectra_i,'double')
     % Size check if it is a double matrix
     
     Ls = size(spectra_i);
