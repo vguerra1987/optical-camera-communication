@@ -111,7 +111,8 @@ for J = 1:lastRowCols
     ylabel(data(count).ylabel, 'Interpreter', 'latex', 'FontSize', fontsize);
     
     set(gca,'box',box,'linewidth',linewidth, ...
-        'xgrid',xgrid, 'ygrid',ygrid,'fontsize',axesfontsize);
+        'xgrid',xgrid, 'ygrid',ygrid,'fontsize',axesfontsize,...
+        'tickLabelInterpreter','latex');
     
     legend(leg, 'Interpreter', 'latex', 'FontSize', fontsize);
     
