@@ -11,8 +11,8 @@ iteration = 10;
 curr_rho = 0;
 curr_theta = 0;
 
-alpha = 0.01;
-theta_sample = 1;
+alpha = 1;
+theta_sample = 2;
 
 derivative = Inf;
 
@@ -24,14 +24,14 @@ while (iteration > 0) && (curr_rho < rho_obj) && (abs(derivative) > 0.0001)
     
     % We estimate the derivative using a centered difference scheme
     % (evaluating the correlation with +-2 deviations)
-    aux_img = imrotate(img, curr_theta + theta_sample);
+    aux_img = imrotate(img, -curr_theta - theta_sample);
     rho_next = getNewRho(aux_img, template, 0);
-    aux_img = imrotate(img, curr_theta - theta_sample);
+    aux_img = imrotate(img, -curr_theta + theta_sample);
     rho_prev = getNewRho(aux_img, template, 0);
     derivative = (rho_next-rho_prev)/2/theta_sample;
-    second_derivative = (rho_next - 2*curr_rho + rho_prev)/2/theta_sample;
+    %second_derivative = (rho_next - 2*curr_rho + rho_prev)/2/theta_sample;
     
-    step = -alpha/2*(rho_obj -curr_rho)/(derivative + eps);
+    step = alpha*derivative;
     % step = alpha/2*log((curr_rho -rho_obj)^2)*(curr_rho-rho_obj)/derivative;
     
     if (abs(step) < 1)
@@ -42,7 +42,7 @@ while (iteration > 0) && (curr_rho < rho_obj) && (abs(derivative) > 0.0001)
     
     if (do_debug)
         fprintf('Derivative: %f\n', derivative);
-        fprintf('Second derivative: %f\n', second_derivative);
+%         fprintf('Second derivative: %f\n', second_derivative);
         fprintf('Step: %f\n',step);
         fprintf('Rho: %f\n',curr_rho);
         fprintf('Function: %f\n', (curr_rho - rho_obj)^2);
