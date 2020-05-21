@@ -18,6 +18,9 @@ clear; close all; clc;
 
 %% VARIABLES AND OBJECTS
 
+% Number of frames to capture per temperature
+frames_to_capture = 100;
+
 % The thermal camera will monitor Peltier temperature
 thermal_camera = ThermalCamera('HERE GOES THE IP', 'HERE GOES THE PORT');
 
@@ -30,16 +33,19 @@ led_channel = 1;
 multispectral_camera = MultiSpectralCamera('HERE GOES IP', 'HERE GOES PORT');
 
 % CMOS camera (is USB)
-visible_camera = VisibleCamera('HERE GOES THE DEVICE NUMBER');
+% An extensive description of the camera parameters is needed (exposure
+% time, gamma, gain, etcetera).
+visible_camera = VisibleCamera(1);
+controller_params.FramesPerTrigger = frames_to_capture;
+source_params.BacklightCompensation = 0;
+visible_camera.initialize(controller_params, source_params);
 
-% Number of frames to capture per temperature
-frames_to_capture = 100;
 
 % Folder, image_prefixes, and more stuff
 root_folder = 'Database/';
 thermal_folder = 'thermal/';
 multispectral_folder = 'multispectral/';
-visible_folder = 'cmos/';
+visible_folder = 'visible/';
 
 % Current range for the Peltier
 peltier_Imin = -1;      % This corresponds to the lowest temperature
@@ -91,15 +97,31 @@ for led_current = led_current_list
         % temperature diffusion to the pn-junction
         pause(30);
         
-        % Now we get several frames (frames_to_capture per camera)       
-        for I = 1:frames_to_capture
-            photo_name = sprintf('%1.3f_%1.3f_%03d', led_current, currI, I);
-            thermal_camera.capture_and_store(I, photo_name, ...
-                                    [root_folder, thermal_folder]);
-            multispectral_camera.capture_and_store(I, photo_name, ...
-                                    [root_folder, multispectral_folder]);
-            visible_camera.capture_and_store(I, photo_name, ...
+        % We indicate the cameras to start the capture
+        visible_camera.start_capture();
+        thermal_camera.start_capture();
+        % The multispectral camera needs the number of captures to obtain
+        multispectral_camera.start_capture(frames_to_capture);  
+        
+        % We wait until the three cameras have finished
+        while (~(visible_camera.has_finished() && ...
+                thermal_camera.has_finished() ))
+            pause(5); % This prevents CPU throttling
+        end
+        
+        % Finally we store the thermal and visible images. Regarding the
+        % multispectral images, the other computer must ensure proper image
+        % IDs to organize the measurements.
+        
+        photo_name = sprintf('%1.3f_%1.3f_', led_current, currI);
+        visible_camera.store_images(photo_name, ...
                                     [root_folder, visible_folder]);
+        thermal_camera.store_images(photo_name, ...
+                                    [root_folder, thermal_folder]);
+        
+        % Finally, we check if the multispectral camera server finished
+        while ~multispectral_camera.has_finished()
+            pause(5); % This prevents CPU throttling
         end
         
         % We update the current
