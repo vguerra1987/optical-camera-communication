@@ -89,8 +89,8 @@ for led_current = led_current_list
         power_supply.set_current(currI, peltier_channel);
         
         % We wait until the temperature is reached
-        while (~thermal_camera.is_temperature_stable(test_point))
-            pause(1);
+        while (~thermal_camera.is_temperature_stable(test_point, 0.01))
+            pause(10); % This presents CPU throttling
         end
         
         % Once the condition is met, we must wait a little to ensure

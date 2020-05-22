@@ -61,6 +61,40 @@ classdef ThermalCamera
             end
         end
         
+        % Get Frame in Degrees
+        % This functions gets just one frame.
+        function frame = get_frame_in_degrees(obj)
+            % We must take into account the cam configuration.
+            % Currently, it is hardcoded assuming that the camera is
+            % configured to its maximum resolution. Kelvin to degree
+            % conversion is also carried out.
+            frame = double(getsnapshot(obj)/100) - 273;
+        end
+        
+        % Is temperature stable?
+        % This function monitors if temperature has stabilized.
+        function stable = is_temperature_stable(obj, test_point, ...
+                                                alpha)
+            % We capture one batch of 100 frames and then process it
+            obj.start_capture();
+            while(~obj.has_finished())
+                pause(5); % This prevents CPU throttling
+            end
+            frames = getdata(obj);
+            frames = squeeze(frames(test_point(1), test_point(2), :));
+            
+            % Now we must analyze the derivative using a test
+            frames = diff(frames);
+            
+            % We return the result of a Welch's t-test on the derivative.
+            % We invert the result because the null hypothesis (0) implies
+            % that has stabilized (true), and the alternative 
+            % hypothesis (1), the opposite (false).
+            stable = 1 - ttest(frames, 0, alpha);
+            
+            
+        end
+        
     end
     
     %%%%%%%%%%%%%%%%%%%%%
