@@ -48,12 +48,12 @@ multispectral_folder = 'multispectral/';
 visible_folder = 'visible/';
 
 % Current range for the Peltier
-peltier_Imin = -1;      % This corresponds to the lowest temperature
-peltier_Imax = 1;       % This corresponds to the highest temperature
+peltier_Imin = -0.7;      % This corresponds to the lowest temperature
+peltier_Imax = 0.7;       % This corresponds to the highest temperature
 peltier_Istep = 10e-3;  % Current step (10 mA)
 
 % Current range for the LED
-led_current_list = [1 5 10 15]*1e-3;
+led_current_list = 10e-3; %[1 5 10 15]*1e-3;
 
 
 %% SETTING THINGS UP
@@ -67,13 +67,17 @@ led_current_list = [1 5 10 15]*1e-3;
 power_supply.set_as_current_source(peltier_channel);
 power_supply.set_as_current_source(led_channel);
 
+power_supply.set_measure_type(peltier_channel,'v');
+power_supply.set_measure_type(led_channel,'i');
+
+%%%%% THIS IS TEMPORARILY COMMENTED
 % We ask the thermal camera to provide us a photo to define the temperature
 % test point
-aux_img = thermal_camera.get_frame_in_degrees();
-imshow(aux_img, []);
-[test_point(2), test_point(1)] = ginput();
-
-clear aux_img
+% aux_img = thermal_camera.get_frame_in_degrees();
+% imshow(aux_img, []);
+% [test_point(2), test_point(1)] = ginput();
+% 
+% clear aux_img
 
 % We iterate on all the led_current_list
 for led_current = led_current_list
@@ -89,8 +93,11 @@ for led_current = led_current_list
         power_supply.set_current(currI, peltier_channel);
         
         % We wait until the temperature is reached
-        while (~thermal_camera.is_temperature_stable(test_point, 0.01))
-            pause(10); % This presents CPU throttling
+        %while (~thermal_camera.is_temperature_stable(test_point, 0.01))
+        %    pause(10); % This prevents CPU throttling
+        %end
+        while (~peltier_voltage_stable(power_supply, peltier_channel, 0.01))
+            pause(5); % This prevents CPU throttling
         end
         
         % Once the condition is met, we must wait a little to ensure
@@ -99,14 +106,17 @@ for led_current = led_current_list
         
         % We indicate the cameras to start the capture
         visible_camera.start_capture();
-        thermal_camera.start_capture();
+        % thermal_camera.start_capture();
         % The multispectral camera needs the number of captures to obtain
         multispectral_camera.start_capture(frames_to_capture);  
         
         % We wait until the three cameras have finished
-        while (~(visible_camera.has_finished() && ...
-                thermal_camera.has_finished() ))
-            pause(5); % This prevents CPU throttling
+        % while (~(visible_camera.has_finished() && ...
+        %        thermal_camera.has_finished() ))
+        %    pause(5); % This prevents CPU throttling
+        % end
+        while ~visible_camera.has_finished()
+            pause(5);  % This prevents CPU throttling
         end
         
         % Finally we store the thermal and visible images. Regarding the
@@ -116,8 +126,8 @@ for led_current = led_current_list
         photo_name = sprintf('%1.3f_%1.3f_', led_current, currI);
         visible_camera.store_images(photo_name, ...
                                     [root_folder, visible_folder]);
-        thermal_camera.store_images(photo_name, ...
-                                    [root_folder, thermal_folder]);
+        % thermal_camera.store_images(photo_name, ...
+        %                            [root_folder, thermal_folder]);
         
         % Finally, we check if the multispectral camera server finished
         while ~multispectral_camera.has_finished()
