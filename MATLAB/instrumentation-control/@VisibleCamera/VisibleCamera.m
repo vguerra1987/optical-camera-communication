@@ -3,7 +3,7 @@ classdef VisibleCamera
     %%%%%%%%%%%%%%%%%%%%%%%%
     %% PRIVATE PROPERTIES %%
     %%%%%%%%%%%%%%%%%%%%%%%%
-    properties (Access=private)
+    properties (Access=public)
         controller;
         source;
     end
@@ -16,7 +16,7 @@ classdef VisibleCamera
         function obj = VisibleCamera(index)
             obj.controller = videoinput('linuxvideo',index);
             obj.source = obj.controller.source;
-            obj.controller.ReturnedColorSpace = 'rgb';
+            set(obj.controller, 'ReturnedColorSpace', 'rgb');
         end
         
         % Initialization of both controller and source
@@ -76,7 +76,7 @@ classdef VisibleCamera
             % We iterate on them (note the transposition which is needed
             % due to the cell-array nature of "fields"
             for field = fields'
-                obj.controller.(field{1}) = params.(field{1});
+                set(obj.controller,field{1},params.(field{1}));
             end
             
         end

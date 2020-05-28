@@ -8,8 +8,10 @@ measurements = zeros(1,num_samples);
 % We get some measurements with a sample rate of approximately 100 ms.
 for I = 1:num_samples
     measurements(I) = power_supply.getMeasure(peltier_channel);
-    pause(0.1);
+    pause(0.01);
 end
+
+fprintf('media: %f std: %f\n',mean(measurements), std(measurements));
 
 % Now we must analyze the derivative using a test
 frames = diff(measurements);
@@ -18,4 +20,5 @@ frames = diff(measurements);
 % We invert the result because the null hypothesis (0) implies
 % that has stabilized (true), and the alternative
 % hypothesis (1), the opposite (false).
-stable = 1 - ttest(frames, 0, alpha);
+[h,p] = ttest(frames, 0, alpha);
+stable = 1 - h;

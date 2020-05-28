@@ -12,7 +12,8 @@ classdef MultiSpectralCamera
        
         % Constructor
         function obj = MultiSpectralCamera(ip,port)
-            obj.socket = tcpip(ip, port, 'NetworkRole','client');
+            obj.socket = tcpip(ip, port);
+            obj.socket.Terminator = 'LF';
             fopen(obj.socket);
         end
         

@@ -25,19 +25,20 @@ frames_to_capture = 100;
 thermal_camera = ThermalCamera('HERE GOES THE IP', 'HERE GOES THE PORT');
 
 % The power supply will drive the LED (or LEDs)
-power_supply = PowerSupply('HERE GOES THE IP', 'HERE GOES THE PORT');
+power_supply = PowerSupply('192.168.10.60', 7655);
 peltier_channel = 2;
 led_channel = 1;
 
 % Multispectral camera
-multispectral_camera = MultiSpectralCamera('HERE GOES IP', 'HERE GOES PORT');
+multispectral_camera = MultiSpectralCamera('192.168.10.4', 44100);
 
 % CMOS camera (is USB)
 % An extensive description of the camera parameters is needed (exposure
 % time, gamma, gain, etcetera).
 visible_camera = VisibleCamera(1);
 controller_params.FramesPerTrigger = frames_to_capture;
-source_params.BacklightCompensation = 0;
+% source_params.BacklightCompensation = 0;
+source_params.WhiteBalanceMode = 'manual';
 visible_camera.initialize(controller_params, source_params);
 
 
@@ -64,11 +65,11 @@ led_current_list = 10e-3; %[1 5 10 15]*1e-3;
 %                         ^                                 |
 %                         |_________________________________|
 
-power_supply.set_as_current_source(peltier_channel);
-power_supply.set_as_current_source(led_channel);
+power_supply.setCurrent(peltier_channel,0);
+power_supply.setCurrent(led_channel,0);
 
-power_supply.set_measure_type(peltier_channel,'v');
-power_supply.set_measure_type(led_channel,'i');
+power_supply.setMeasureType(peltier_channel,'v');
+power_supply.setMeasureType(led_channel,'i');
 
 %%%%% THIS IS TEMPORARILY COMMENTED
 % We ask the thermal camera to provide us a photo to define the temperature
@@ -90,7 +91,7 @@ for led_current = led_current_list
     
     while (currI < peltier_Imax)
         % First of all, we must update the power supply current
-        power_supply.set_current(currI, peltier_channel);
+        power_supply.setCurrent(peltier_channel, currI);
         
         % We wait until the temperature is reached
         %while (~thermal_camera.is_temperature_stable(test_point, 0.01))
@@ -106,17 +107,15 @@ for led_current = led_current_list
         
         % We indicate the cameras to start the capture
         visible_camera.start_capture();
-        % thermal_camera.start_capture();
+        thermal_camera.start_capture();
+        
         % The multispectral camera needs the number of captures to obtain
-        multispectral_camera.start_capture(frames_to_capture);  
+        multispectral_camera.start_capture();  
         
         % We wait until the three cameras have finished
-        % while (~(visible_camera.has_finished() && ...
-        %        thermal_camera.has_finished() ))
-        %    pause(5); % This prevents CPU throttling
-        % end
-        while ~visible_camera.has_finished()
-            pause(5);  % This prevents CPU throttling
+        while (~(visible_camera.has_finished() && ...
+               thermal_camera.has_finished() ))
+           pause(5); % This prevents CPU throttling
         end
         
         % Finally we store the thermal and visible images. Regarding the
@@ -126,8 +125,8 @@ for led_current = led_current_list
         photo_name = sprintf('%1.3f_%1.3f_', led_current, currI);
         visible_camera.store_images(photo_name, ...
                                     [root_folder, visible_folder]);
-        % thermal_camera.store_images(photo_name, ...
-        %                            [root_folder, thermal_folder]);
+        thermal_camera.store_images(photo_name, ...
+                                   [root_folder, thermal_folder]);
         
         % Finally, we check if the multispectral camera server finished
         while ~multispectral_camera.has_finished()

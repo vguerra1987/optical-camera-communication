@@ -14,12 +14,16 @@ classdef PowerSupply
         
         % Set Current
         function setCurrent(obj, channel, value)
+            line = sprintf(':CHAN%d:SOUR:FUNC CURR', channel);
+            fprintf(obj.socket, line);
             line = sprintf(':CHAN%d:SOUR:CURR:LEV %.3e', channel, value);
             fprintf(obj.socket, line);
         end
         
         % Set Voltage
         function setVoltage(obj, channel, value)
+            line = sprintf(':CHAN%d:SOUR:FUNC VOLT', channel);
+            fprintf(obj.socket, line);
             line = sprintf(':CHAN%d:SOUR:VOLT:LEV %.3e', channel, value);
             fprintf(obj.socket, line);
         end
