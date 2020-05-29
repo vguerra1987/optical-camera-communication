@@ -1,6 +1,7 @@
 
 function [image,p,t]=freadenvi(fname)
 % freadenvi          	- read envi image (V. Guissard, Apr 29 2004)
+% Modified by: Victor Guerra, PhD  (May 2020)
 %
 % 				Reads an image of ENVI standard type 
 %				to a [col x line x band] MATLAB array
