@@ -31,12 +31,18 @@ classdef MultiSpectralCamera
             response = fgetl(obj.socket);
             
             % No error control implemented yet
-            if response == 1
+            if strcmp(response,'OK')
                 out = 1;
             else
                 out = 0;
             end
             
+        end
+        
+        % Indicate the server that the files can be moved
+        function move_files(obj, folder)
+            line = sprintf('FOLDER %s', folder);
+            fprintf(obj.socket, line);
         end
         
         

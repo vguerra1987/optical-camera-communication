@@ -97,7 +97,7 @@ for led_current = led_current_list
         %while (~thermal_camera.is_temperature_stable(test_point, 0.01))
         %    pause(10); % This prevents CPU throttling
         %end
-        while (~peltier_voltage_stable(power_supply, peltier_channel, 0.01))
+        while (~is_voltage_stable(power_supply, peltier_channel, 0.01))
             pause(5); % This prevents CPU throttling
         end
         
