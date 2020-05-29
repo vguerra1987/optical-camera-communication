@@ -1,5 +1,5 @@
 
-function [image,p,t]=freadenvi(fname);
+function [image,p,t]=freadenvi(fname)
 % freadenvi          	- read envi image (V. Guissard, Apr 29 2004)
 %
 % 				Reads an image of ENVI standard type 
@@ -29,39 +29,46 @@ function [image,p,t]=freadenvi(fname);
 %				as the ENVI image file + the '.hdf' exention.
 %
 %%%%%%%%%%%%%
-% Parameters initialization
-elements={'samples ' 'lines   ' 'bands   ' 'data type '};
+% % Parameters initialization
+% elements={'samples','lines','bands','data type'};
+
 d={'bit8' 'int16' 'int32' 'float32' 'float64' 'uint16' 'uint32' 'int64' 'uint64'};
+
 % Check user input
 if ~ischar(fname)
     error('fname should be a char string');
 end
+
 % Open ENVI header file to retreive s, l, b & d variables
-rfid = fopen(strcat(fname,'.hdr'),'r');
+rfid = fopen(strcat(fname,'.hdr'), 'r');
+
 % Check if the header file is correctely open
 if rfid == -1
     error('Input header file does not exist');
-end;
+end
+
 % Read ENVI image header file and get p(1) : nb samples,
 % p(2) : nb lines, p(3) : nb bands and t : data type
 while 1
     tline = fgetl(rfid);
+    
     if ~ischar(tline), break, end
+    
     [first,second]=strtok(tline,'=');
     
-    switch first
-        case elements(1)
-            [f,s]=strtok(second);
-            p(1)=str2num(s);
-        case elements(2)
-            [f,s]=strtok(second);
-            p(2)=str2num(s);
-        case elements(3)
-            [f,s]=strtok(second);
-            p(3)=str2num(s);
-        case elements(4)
-            [f,s]=strtok(second);
-            t=str2num(s);
+    switch strtrim(first)
+        case 'samples'
+            [~,s] = strtok(second);            
+            p(1) = str2double(s);
+        case 'lines'
+            [~,s] = strtok(second);
+            p(2) = str2double(s);
+        case 'bands'
+            [~,s] = strtok(second);
+            p(3) = str2double(s);
+        case 'data type'
+            [~,s] = strtok(second);
+            t = str2double(s);
             switch t
                 case 1
                     t=d(1);
@@ -84,15 +91,24 @@ while 1
                 otherwise
                     error('Unknown image data type');
             end
+        otherwise
+            
     end
 end
+
 fclose(rfid);
 t=t{1,1};
+
+
 % Open the ENVI image and store it in the 'image' MATLAB array
 disp([('Opening '),(num2str(p(1))),('cols x '),(num2str(p(2))),('lines x '),(num2str(p(3))),('bands')]);
 disp([('of type '), (t), (' image...')]);
-fid=fopen(fname);
-image=fread(fid,t);
-image=reshape(image,[p(1),p(2),p(3)]);
+
+fid=fopen(strcat(fname,'.bin'), 'r');
+
+image = fread(fid,prod(p),t);
+
+image=reshape(image,p(1),p(3),p(2));
+image = permute(image, [1 3 2]);
 fclose(fid);
-%disp([('Image data type : '),(t)])
+
