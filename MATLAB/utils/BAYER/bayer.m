@@ -1,8 +1,7 @@
-%% BAYER ESTIMATION
+%% BAYER ESTIMATION (Sony IMX249)
 clear all
 close all
 clc
-
 
 %% COLORS
 BLUE = [255 155 74];
@@ -61,6 +60,22 @@ plot(wavelengths, redR,'r');
 hold on;
 plot(wavelengths, greenR,'g');
 plot(wavelengths, blueR,'b');
+
+% Interpolation
+redR(880) = 0.011;
+blueR(880) = 0.017;
+redR_int = fillmissing(redR,'linear');
+greenR_int = fillmissing(greenR,'linear');
+blueR_int = fillmissing(blueR,'linear');
+
+figure(3);
+plot(wavelengths, redR_int,'r');
+hold on;
+plot(wavelengths, greenR_int,'g');
+plot(wavelengths, blueR_int,'b');
+xlabel('Wavelength (nm)', 'Interpreter', 'latex')
+ylabel('Spectral response (A/W)', 'Interpreter', 'latex')
+legend('Red Response', 'Green Response', 'Blue Response', 'Interpreter', 'latex')
 
 %% USEFUL FUNCTIONS
 % Distance calculation

@@ -22,6 +22,7 @@ if strcmp(style, 'light')
     ygrid = 'on';
     fontsize = 16;
     axesfontsize = 14;
+    ticklabelinterpreter = 'latex';
 elseif strcmp(style, 'strong')
     box = 'on';
     linewidth = 2.0;
@@ -30,6 +31,7 @@ elseif strcmp(style, 'strong')
     ygrid = 'on';
     fontsize = 16;
     axesfontsize = 16;
+    ticklabelinterpreter = 'latex';
 elseif strcmp(style, 'sexy')
     box = 'on';
     linewidth = 1.5;
@@ -38,6 +40,7 @@ elseif strcmp(style, 'sexy')
     ygrid = 'off';
     fontsize = 14;
     axesfontsize = 14;
+    ticklabelinterpreter = 'latex';
 else
     error('Must define one of the following styles: light, strong or sexy');
 end
@@ -78,7 +81,8 @@ for I = 1:numRows-double(lastRowCols ~= 0)
         subplot('position', [posX, posY, width, height]);
         hold on
         for K = 1:size(ydata,2)
-            plot(xdata, ydata(:,K), [colors{K} styles{K}], 'LineWidth', plotlinewidth);
+            % plot(xdata, ydata(:,K), [colors{K} styles{K}], 'LineWidth', plotlinewidth);
+            plot(xdata, ydata(:,K), 'Color', colors{K}, 'LineStyle', styles{K}, 'LineWidth', plotlinewidth);
         end
         hold off
         
@@ -86,7 +90,8 @@ for I = 1:numRows-double(lastRowCols ~= 0)
         ylabel(data(count).ylabel, 'Interpreter', 'latex', 'FontSize', fontsize);
         
         set(gca,'box',box,'linewidth',linewidth, ...
-            'xgrid',xgrid, 'ygrid',ygrid,'fontsize',axesfontsize);
+            'xgrid',xgrid, 'ygrid',ygrid,'fontsize',axesfontsize, ...
+            'ticklabelinterpreter', ticklabelinterpreter);
         
         legend(leg, 'Interpreter', 'latex', 'FontSize', fontsize);
         
@@ -103,7 +108,8 @@ for J = 1:lastRowCols
     subplot('position', [posX, posY, width, height]);
     hold on
     for K = 1:size(data(count),2)
-        plot(xdata, ydata(:,K), [colors{K} styles{K}], 'LineWidth', plotlinewidth);
+        % plot(xdata, ydata(:,K), [colors{K} styles{K}], 'LineWidth', plotlinewidth);
+        plot(xdata, ydata(:,K), 'Color', colors{K}, 'LineStyle', styles{K}, 'LineWidth', plotlinewidth);
     end
     hold off
     
