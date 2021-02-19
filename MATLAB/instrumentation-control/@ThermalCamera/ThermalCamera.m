@@ -13,7 +13,7 @@ classdef ThermalCamera
     %%%%%%%%%%%%%%%%%%%%
     methods (Access=public)
         % Constructor
-        function obj = VisibleCamera(index)
+        function obj = ThermalCamera(index)
             obj.controller = videoinput('gige',index);
             obj.source = obj.controller.source;
             % Must check more things to initialize
