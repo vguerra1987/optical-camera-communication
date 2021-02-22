@@ -1,6 +1,8 @@
 import multiprocessing
 import MultispectralCamera
 import time
+import cv2
+import numpy as np
 
 # First of all we create the pipe
 parent_pipe, child_pipe = multiprocessing.Pipe()
@@ -11,5 +13,7 @@ process.start()
 
 while True:
     data = child_pipe.recv()
-    print(data)
+    print(np.max(data.flatten()))
+    cv2.imshow('FUCK', data[100:,100:])
+    cv2.waitKey(1)
 

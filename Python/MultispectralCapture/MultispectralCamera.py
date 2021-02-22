@@ -39,15 +39,24 @@ class MultispectralCamera(object):
         self.data = []
         self.lock = Lock()
         self.pipe = 0
+        self.offset_x = 2
+        self.offset_y = 2
 
         self.__init_camera()
         self.__get_camera_info()
         self.__get_sensor_info()
+        #self.__default()
         self.__display_mode()
+        self.__get_color_mode()
         self.__get_dimensions()
         self.__memory_allocation()
+        self.__set_color_mode()
         self.__set_events()
         self.__mandatory_shit()
+
+        print("Color mode {}".format(self.color_mode))
+        print("Bits per pixel {}".format(self.bits_per_pixel))
+        print("Bytes per pixel {}".format(self.bytes_per_pixel))
 
     # # # # #  # # # # #
     #  PRIVATE METHODS #
@@ -60,11 +69,16 @@ class MultispectralCamera(object):
         self.__disable_hdr()
         self.__disable_gain_boost()
         self.__device_feature(1)
+        self.__set_black_level(0)
+
+    def __default(self):
+        if not ueye.is_ResetToDefault(self.cam) == ueye.IS_SUCCESS:
+            raise RuntimeError("Could not reset to default")
 
     def __set_gamma(self, value=100):
         gamma = ueye.INT(int(value))
         if not ueye.is_Gamma(self.cam, ueye.IS_GAMMA_CMD_SET, gamma, ueye.sizeof(gamma)) == ueye.IS_SUCCESS:
-                raise RuntimeError("IS_GAMMA_CMD_SET failed")
+            raise RuntimeError("IS_GAMMA_CMD_SET failed")
 
     def __disable_hot_pixel_correction(self, value=0):
         hotpixel = ueye.c_void_p(int(value))
@@ -148,6 +162,49 @@ class MultispectralCamera(object):
 
         print("Memory allocated")
 
+    # Color mode
+    def __get_color_mode(self):
+        # Set the right color mode
+        if int.from_bytes(self.sensor_info.nColorMode.value, byteorder='big') == ueye.IS_COLORMODE_BAYER:
+            ueye.is_GetColorDepth(
+                self.cam, self.bits_per_pixel, self.color_mode)
+            self.bytes_per_pixel = int(self.bits_per_pixel / 8)
+            print("IS_COLORMODE_BAYER: ", )
+            print("\tcolor_mode: \t\t", self.color_mode)
+            print("\tnBitsPerPixel: \t\t", self.bits_per_pixel)
+            print("\tbytes_per_pixel: \t\t", self.bytes_per_pixel)
+            print()
+
+        elif int.from_bytes(self.sensor_info.nColorMode.value, byteorder='big') == ueye.IS_COLORMODE_CBYCRY:
+            # for color camera models use RGB32 mode
+            self.color_mode = ueye.IS_CM_BGRA8_PACKED
+            self.bits_per_pixel = ueye.INT(32)
+            self.bytes_per_pixel = int(self.bits_per_pixel / 8)
+            print("IS_COLORMODE_CBYCRY: ", )
+            print("\tcolor_mode: \t\t", self.color_mode)
+            print("\tnBitsPerPixel: \t\t", self.bits_per_pixel)
+            print("\tbytes_per_pixel: \t\t", self.bytes_per_pixel)
+            print()
+
+        elif int.from_bytes(self.sensor_info.nColorMode.value, byteorder='big') == ueye.IS_COLORMODE_MONOCHROME:
+            # for color camera models use RGB32 mode
+            self.color_mode = ueye.IS_CM_MONO10
+            self.bits_per_pixel = ueye.INT(16)
+            self.bytes_per_pixel = int(self.bits_per_pixel / 8)
+            print("IS_COLORMODE_MONOCHROME: ", )
+            print("\tcolor_mode: \t\t", self.color_mode)
+            print("\tnBitsPerPixel: \t\t", self.bits_per_pixel)
+            print("\tbytes_per_pixel: \t\t", self.bytes_per_pixel)
+            print()
+
+        else:
+            self.color_mode = ueye.IS_CM_MONO8
+            self.bits_per_pixel = ueye.INT(8)
+            self.bytes_per_pixel = int(self.bits_per_pixel / 8)
+
+    def __set_color_mode(self):
+        ueye.is_SetColorMode(self.cam, self.color_mode)
+
     # Set Events
     def __set_events(self):
         if not ueye.is_EnableEvent(self.cam, ueye.IS_SET_EVENT_FRAME) == ueye.IS_SUCCESS:
@@ -162,12 +219,28 @@ class MultispectralCamera(object):
 
         print("Events disabled")
 
+    def __set_black_level(self, level):
+        bl = ueye.UINT(int(level))
+        if not ueye.is_Blacklevel(self.cam, ueye.IS_BLACKLEVEL_CMD_SET_OFFSET, bl, ueye.ctypes.sizeof(bl)) == ueye.IS_SUCCESS:
+            raise RuntimeError("IS_BLACKLEVEL_CMD_SET_OFFSET failed")
+        return bl.value
+
     # Disable events
     def __exit(self):
         if not ueye.is_ExitCamera(self.cam) == ueye.IS_SUCCESS:
             raise RuntimeError("Camera is still attached")
 
         print("Camera detached")
+
+    # Pick up spectral signature of a given pixel
+    def __pick_up_signature(self, data, x, y):
+        x_index = int(x/3)*3
+        y_index = int(y/3)*3
+
+        base_x_pos = self.offset_x + x_index
+        base_y_pos = self.offset_y + y_index
+
+        return data[base_x_pos:base_x_pos+3, base_y_pos:base_y_pos+3].flatten()
 
     # # # # # # # # # #
     #  PUBLIC METHODS #
@@ -210,6 +283,7 @@ class MultispectralCamera(object):
                                        self.pitch) == ueye.IS_SUCCESS:
             raise RuntimeError("Memory inquiry failed")
 
+        print("Pitch is {}".format(self.pitch))
         print("Camera in live mode")
 
     # ---------- PIPED ACQUISITION ---------- #
@@ -217,17 +291,14 @@ class MultispectralCamera(object):
         self.status = 'RUN'
         self.pipe = pipe
         print("Acquisition started!")
-        print(self.cam)
 
         while self.status == 'RUN':
 
             if ueye.is_WaitEvent(self.cam, ueye.IS_SET_EVENT_FRAME, 5000) == ueye.IS_SUCCESS:
                 data = ueye.get_data(self.image_memory, self.width, self.height, self.bits_per_pixel, self.pitch, False)
                 frame = np.reshape(data, (self.height.value, self.width.value, self.bytes_per_pixel))
-                raw_frame = np.zeros((self.height.value, self.width.value), dtype=np.uint16)
-                raw_frame = frame[:, :, 1] * 256 + frame[:, :, 0]  # Image raw in 10bits
-
-                self.pipe.send(raw_frame[200, 200])
+                raw_frame = (frame[:, :, 1])*256 + frame[:, :, 0]  # Image raw in 10bits
+                self.pipe.send(raw_frame)
 
             else:
                 self.status = 'IDLE'
